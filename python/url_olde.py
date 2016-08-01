@@ -10,7 +10,8 @@ SCRIPT_DESC = "tells you how long ago a URL was first posted."
 
 try:
     import weechat as w
-    import sqlite3, time, datetime
+    import sqlite3, time, re
+    from urlparse import urlparse
     IMPORT_ERR = 0
 except ImportError:
     IMPORT_ERR = 1
@@ -30,7 +31,7 @@ def create_db():
 
 def search_urls_cb(data, buffer, date, tags, displayed, highlight, prefix, message):
     """ function for searching for the url
-    message = uri
+    message has the uri in it
     buffer needs buffer_get_string for the short name
     prefix is nick
     """
@@ -38,14 +39,17 @@ def search_urls_cb(data, buffer, date, tags, displayed, highlight, prefix, messa
     database.text_factory = str
     cursor = database.cursor()
     nick = prefix
+    full_uri = re.findall('http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+', message)
+    str1 = ''.join(full_uri)
+    uri = urlparse(str1).hostname + urlparse(str1).path
     channel = w.buffer_get_string(buffer, 'name') # current channel. needs to come from sql.
     new_entry = []
-    new_entry.append(message)
+    new_entry.append(uri)
     new_entry.append(time.time())
     new_entry.append(nick)
     new_entry.append(channel)
-    for olde in (message,):
-        cursor.execute("SELECT date,uri,nick,channel from urls WHERE uri LIKE ?", (message,))
+    for olde in (uri,):
+        cursor.execute("SELECT date,uri,nick,channel from urls WHERE uri LIKE ?", (uri,))
         result=cursor.fetchone()
         if result is None:
             """ a new URL is seen! """
@@ -75,7 +79,7 @@ if w.register(SCRIPT_NAME, SCRIPT_AUTHOR, SCRIPT_VERSION,
     w.hook_print('', '', '://', 1, 'search_urls_cb', '')
 
     # test
-    w.prnt(w.current_buffer(), "feh")
+    w.prnt(w.current_buffer(), "script loaded!")
 
 #def _print_url(data, buffer):
 #    return w.WEECHAT_RC_OK
