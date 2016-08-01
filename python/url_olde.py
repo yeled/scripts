@@ -10,7 +10,7 @@ SCRIPT_DESC = "tells you how long ago a URL was first posted."
 
 try:
     import weechat as w
-    import sqlite3, time
+    import sqlite3, time, datetime
     IMPORT_ERR = 0
 except ImportError:
     IMPORT_ERR = 1
@@ -39,24 +39,25 @@ def search_urls_cb(data, buffer, date, tags, displayed, highlight, prefix, messa
     cursor = database.cursor()
     nick = prefix
     channel = w.buffer_get_string(buffer, 'name') # current channel. needs to come from sql.
-    entry = []
-    entry.append(message)
-    entry.append(time.time())
-    entry.append(nick)
-    entry.append(channel)
-    #, str(time.time()), nick, channel)]
+    new_entry = []
+    new_entry.append(message)
+    new_entry.append(time.time())
+    new_entry.append(nick)
+    new_entry.append(channel)
     for olde in (message,):
         cursor.execute("SELECT date,uri,nick,channel from urls WHERE uri LIKE ?", (message,))
         result=cursor.fetchone()
         if result is None:
-            #w.command(buffer, "/notice %s"  % (entry)) #debug
-            cursor.execute("INSERT INTO urls(uri, date, nick, channel) VALUES (?,?,?,?)", entry)
+            """ a new URL is seen! """
+            #w.command(buffer, "/notice %s"  % (new_entry)) #debug
+            cursor.execute("INSERT INTO urls(uri, date, nick, channel) VALUES (?,?,?,?)", new_entry)
             database.commit()
         else:
+            """ we've got a match from sqlite """
             date, uri, nick, channel = result
-            pretty_time = time.ctime(float(str(date)))
-            #w.command(buffer, "/notice %s"  % str(result)) # debug
-            w.prnt_date_tags(buffer, 0, 'no_log,notify_none', 'mentioned by %s in %s on %s' % (nick, channel, pretty_time))
+            timestamp = time.strftime('%Y-%m-%d', time.localtime(date)) # convert it to YYYY-MM-DD
+            #w.command(buffer, "/notice DING %s"  % str(result)) # debug
+            w.prnt_date_tags(buffer, 0, 'no_log,notify_none', 'mentioned by %s in %s on %s' % (nick, channel, timestamp))
     return w.WEECHAT_RC_OK
 
 
