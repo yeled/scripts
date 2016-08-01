@@ -26,9 +26,9 @@ def create_db():
     """ create the sqlite database """
     tmpcon = sqlite3.connect(DBFILE)
     cur = tmpcon.cursor()
-    cur.execute("CREATE TABLE urls(id INTEGER PRIMARY KEY, uri VARCHAR, date INTEGER);")
-    cur.execute("INSERT INTO urls(uri, date) VALUES ('http://spodder.com',1470006765)")
-    cur.execute("INSERT INTO urls(uri, date) VALUES ('http://moo.com',110006765)")
+    cur.execute("CREATE TABLE urls(id INTEGER PRIMARY KEY, uri VARCHAR, date INTEGER, nick VARCHAR, channel VARCHAR);")
+    cur.execute("INSERT INTO urls(uri, date, nick, channel) VALUES ('http://spodder.com',1470006765,'yeled','hello.#world')")
+    cur.execute("INSERT INTO urls(uri, date, nick, channel) VALUES ('http://moo.com',110006765,'charlie','yelp.#badgers')")
     tmpcon.commit()
     cur.close()
 
@@ -42,12 +42,17 @@ def search_urls_cb(data, buffer, date, tags, displayed, highlight, prefix, messa
     database = sqlite3.connect(DBFILE)
     database.text_factory = str
     cursor = database.cursor()
-    channel = w.buffer_get_string(buffer, 'name')
-    for row in cursor.execute("SELECT date,uri from urls WHERE uri LIKE ?", (message,)) :
-        date, uri = row
-        pretty_time = time.ctime(float(str(date)))
-        #w.command(buffer, "/say %s" % pretty_time)
-        w.prnt_date_tags(buffer, 0, 'no_log,notify_none', '%s' % (pretty_time))
+    nick = prefix
+    channel = w.buffer_get_string(buffer, 'name') # current channel. needs to come from sql.
+    for olde in (message, channel, prefix):
+        cursor.execute("SELECT date,uri,nick,channel from urls WHERE uri LIKE ?", (message,))
+        result=cursor.fetchone()
+        if result is None:
+            w.command(buffer, "/say no result for %s" % message)
+        else:
+            date, uri, nick, channel = result
+            pretty_time = time.ctime(float(str(date)))
+            w.prnt_date_tags(buffer, 0, 'no_log,notify_none', 'mentioned by %s in %s on %s' % (nick, channel, pretty_time))
     return w.WEECHAT_RC_OK
 
 
