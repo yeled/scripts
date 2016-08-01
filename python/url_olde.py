@@ -49,13 +49,13 @@ def search_urls_cb(data, buffer, date, tags, displayed, highlight, prefix, messa
         cursor.execute("SELECT date,uri,nick,channel from urls WHERE uri LIKE ?", (message,))
         result=cursor.fetchone()
         if result is None:
-            w.command(buffer, "/say %s"  % (entry))
+            #w.command(buffer, "/notice %s"  % (entry)) #debug
             cursor.execute("INSERT INTO urls(uri, date, nick, channel) VALUES (?,?,?,?)", entry)
             database.commit()
         else:
             date, uri, nick, channel = result
             pretty_time = time.ctime(float(str(date)))
-            #w.command(buffer, "/say %s"  % str(result))
+            #w.command(buffer, "/notice %s"  % str(result)) # debug
             w.prnt_date_tags(buffer, 0, 'no_log,notify_none', 'mentioned by %s in %s on %s' % (nick, channel, pretty_time))
     return w.WEECHAT_RC_OK
 
