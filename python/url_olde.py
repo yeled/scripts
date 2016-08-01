@@ -43,7 +43,7 @@ def search_urls_cb(data, buffer, date, tags, displayed, highlight, prefix, messa
         cursor.execute("SELECT date,uri,nick,channel from urls WHERE uri LIKE ?", (message,))
         result=cursor.fetchone()
         if result is None:
-            w.command(buffer, "/say no result for %s" % message)
+            w.command(buffer, "/say INSERT INTO urls(uri, date, nick, channel) VALUES ('%s', %s, '%s', '%s')" % (message, str(time.time()), nick, channel))
         else:
             date, uri, nick, channel = result
             pretty_time = time.ctime(float(str(date)))
