@@ -23,8 +23,7 @@ def create_db():
     tmpcon = sqlite3.connect(DBFILE)
     cur = tmpcon.cursor()
     cur.execute("CREATE TABLE urls(id INTEGER PRIMARY KEY, uri VARCHAR, date INTEGER, nick VARCHAR, channel VARCHAR);")
-    cur.execute("INSERT INTO urls(uri, date, nick, channel) VALUES ('http://spodder.com',1470006765,'yeled','hello.#world')")
-    cur.execute("INSERT INTO urls(uri, date, nick, channel) VALUES ('http://moo.com',110006765,'charlie','yelp.#badgers')")
+    cur.execute("INSERT INTO urls(uri, date, nick, channel) VALUES ('spodder.com',1470006765,'yeled','hello.#world');")
     tmpcon.commit()
     cur.close()
 
@@ -40,15 +39,16 @@ def search_urls_cb(data, buffer, date, tags, displayed, highlight, prefix, messa
     cursor = database.cursor()
     nick = prefix
     full_uri = re.findall('http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+', message)
-    str1 = ''.join(full_uri)
-    uri = urlparse(str1).hostname + urlparse(str1).path
+    #str1 = ''.join(full_uri)
+    #uri = urlparse(str1).hostname + urlparse(str1).path.rstrip("/)")
     channel = w.buffer_get_string(buffer, 'name') # current channel. needs to come from sql.
-    new_entry = []
-    new_entry.append(uri)
-    new_entry.append(time.time())
-    new_entry.append(nick)
-    new_entry.append(channel)
-    for olde in (uri,):
+    for olde in full_uri: # iterate over each URI we get in the list from full_uri re
+        uri = urlparse(olde).hostname + urlparse(olde).path.rstrip("/)")
+        new_entry = []
+        new_entry.append(uri)
+        new_entry.append(time.time())
+        new_entry.append(nick)
+        new_entry.append(channel)
         cursor.execute("SELECT date,uri,nick,channel from urls WHERE uri LIKE ?", (uri,))
         result=cursor.fetchone()
         if result is None:
