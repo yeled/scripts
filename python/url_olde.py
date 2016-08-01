@@ -16,11 +16,6 @@ except ImportError:
     IMPORT_ERR = 1
 import os
 
-# regex are from urlbar.py, written by xt
-#url_octet = r'(?:2(?:[0-4]\d|5[0-5])|1\d\d|\d{1,2})'
-#url_ipaddr = r'%s(?:\.%s){3}' % (url_octet, url_octet)
-#url_label = r'[0-9a-z][-0-9a-z]*[0-9a-z]?'
-#url_domain = r'%s(?:\.%s)*\.[a-z][-0-9a-z]*[a-z]?' % (url_label, url_label)
 
 def create_db():
     """ create the sqlite database """
@@ -55,11 +50,6 @@ def search_urls_cb(data, buffer, date, tags, displayed, highlight, prefix, messa
             w.prnt_date_tags(buffer, 0, 'no_log,notify_none', 'mentioned by %s in %s on %s' % (nick, channel, pretty_time))
     return w.WEECHAT_RC_OK
 
-
-
-def modify_irc_cb(uri, date):
-    """ add the url age to the IRC message """
-    return date
 
 # weechat.register(name, author, version, license, description,
 #                  shutdown_function, charset)
