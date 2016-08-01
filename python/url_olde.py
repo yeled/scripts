@@ -39,7 +39,7 @@ def search_urls_cb(data, buffer, date, tags, displayed, highlight, prefix, messa
     cursor = database.cursor()
     nick = prefix
     channel = w.buffer_get_string(buffer, 'name') # current channel. needs to come from sql.
-    for olde in (message, channel, prefix):
+    for olde in (message,):
         cursor.execute("SELECT date,uri,nick,channel from urls WHERE uri LIKE ?", (message,))
         result=cursor.fetchone()
         if result is None:
@@ -47,6 +47,7 @@ def search_urls_cb(data, buffer, date, tags, displayed, highlight, prefix, messa
         else:
             date, uri, nick, channel = result
             pretty_time = time.ctime(float(str(date)))
+            #w.command(buffer, "/say %s"  % str(result))
             w.prnt_date_tags(buffer, 0, 'no_log,notify_none', 'mentioned by %s in %s on %s' % (nick, channel, pretty_time))
     return w.WEECHAT_RC_OK
 
