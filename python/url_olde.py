@@ -34,18 +34,23 @@ def create_db():
 
 
 def search_urls_cb(data, buffer, date, tags, displayed, highlight, prefix, message):
-    """ function for searching for the url """
+    """ function for searching for the url
+    message = uri
+    buffer needs buffer_get_string for the short name
+    prefix is nick
+    """
     database = sqlite3.connect(DBFILE)
     database.text_factory = str
     cursor = database.cursor()
+    channel = w.buffer_get_string(buffer, 'name')
     for row in cursor.execute("SELECT date,uri from urls WHERE uri LIKE ?", (message,)) :
         date, uri = row
-        # this comma is special
-        # http://stackoverflow.com/questions/16856647/sqlite3-programmingerror-incorrect-number-of-bindings-supplied-the-current-sta
         pretty_time = time.ctime(float(str(date)))
         #w.command(buffer, "/say %s" % pretty_time)
         w.prnt_date_tags(buffer, 0, 'no_log,notify_none', '%s' % (pretty_time))
     return w.WEECHAT_RC_OK
+
+
 
 def modify_irc_cb(uri, date):
     """ add the url age to the IRC message """
