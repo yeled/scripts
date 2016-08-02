@@ -1,4 +1,6 @@
 """
+Charlie Allom <charlie@evilforbeginners.com>
+
 database init code from https://weechat.org/scripts/source/triggerreply.py.html
 regex is from http://stackoverflow.com/questions/6883049/regex-to-find-urls-in-string-in-python
 
@@ -11,7 +13,7 @@ TODO
  - ignore parts/quits messages
 """
 
-SCRIPT_NAME = "url_olde.py"
+SCRIPT_NAME = "url_olde"
 SCRIPT_AUTHOR = "Charlie Allom <charlie@evilforbeginners.com"
 SCRIPT_VERSION = "0.1"
 SCRIPT_LICENSE = "GPL3"
