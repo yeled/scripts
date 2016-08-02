@@ -1,12 +1,21 @@
 """
-used sql creation code from https://weechat.org/scripts/source/triggerreply.py.html/
+database init code from https://weechat.org/scripts/source/triggerreply.py.html
+regex is from http://stackoverflow.com/questions/6883049/regex-to-find-urls-in-string-in-python
+
+TODO
+----
+ - set a preference value for ignoring:
+  - nicks
+  - channels
+ - purge sql rows after an age range (or fixed size)
+ - ignore parts/quits messages
 """
 
-SCRIPT_NAME = "url_olde"
+SCRIPT_NAME = "url_olde.py"
 SCRIPT_AUTHOR = "Charlie Allom <charlie@evilforbeginners.com"
 SCRIPT_VERSION = "0.1"
-SCRIPT_LICENSE = "Public domain"
-SCRIPT_DESC = "tells you how long ago a URL was first posted."
+SCRIPT_LICENSE = "GPL3"
+SCRIPT_DESC = "tells you how long ago a URL was first posted and by whom, for bragging rights."
 
 try:
     import weechat as w
@@ -19,18 +28,18 @@ import os
 
 
 def create_db():
-    """ create the sqlite database """
+    """ create the sqlite database and insert a test URI as id 1 """
     tmpcon = sqlite3.connect(DBFILE)
     cur = tmpcon.cursor()
     cur.execute("CREATE TABLE urls(id INTEGER PRIMARY KEY, uri VARCHAR, date INTEGER, nick VARCHAR, channel VARCHAR);")
-    cur.execute("INSERT INTO urls(uri, date, nick, channel) VALUES ('spodder.com',1470006765,'yeled','hello.#world');")
+    cur.execute("INSERT INTO urls(uri, date, nick, channel) VALUES ('test.com',1,'donald_trump','hello.#world');")
     tmpcon.commit()
     cur.close()
 
 
 def search_urls_cb(data, buffer, date, tags, displayed, highlight, prefix, message):
-    """ function for searching for the url
-    message has the uri in it
+    """ searching for the url function
+    message is the line that matched '://'
     buffer needs buffer_get_string for the short name
     prefix is nick
     """
@@ -38,13 +47,11 @@ def search_urls_cb(data, buffer, date, tags, displayed, highlight, prefix, messa
     database.text_factory = str
     cursor = database.cursor()
     nick = prefix
-    full_uri = re.findall('http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+', message)
-    #str1 = ''.join(full_uri)
-    #uri = urlparse(str1).hostname + urlparse(str1).path.rstrip("/)")
-    channel = w.buffer_get_string(buffer, 'name') # current channel. needs to come from sql.
-    for olde in full_uri: # iterate over each URI we get in the list from full_uri re
-        uri = urlparse(olde).hostname + urlparse(olde).path.rstrip("/)")
-        new_entry = []
+    full_uri = re.findall('http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+', message) # i didn't write this. close enough is good enough for now.
+    channel = w.buffer_get_string(buffer, 'name') # current channel.
+    for olde in full_uri: # iterate over each URI we get in the list from full_uri regex
+        uri = urlparse(olde).hostname + urlparse(olde).path.rstrip("/)") # strip the final / and lesser-seen )
+        new_entry = [] # create an ordered list of the following values we want to INSERT -> sql later on
         new_entry.append(uri)
         new_entry.append(time.time())
         new_entry.append(nick)
@@ -61,25 +68,20 @@ def search_urls_cb(data, buffer, date, tags, displayed, highlight, prefix, messa
             date, uri, nick, channel = result
             timestamp = time.strftime('%Y-%m-%d', time.localtime(date)) # convert it to YYYY-MM-DD
             #w.command(buffer, "/notice DING %s"  % str(result)) # debug
-            w.prnt_date_tags(buffer, 0, 'no_log,notify_none', 'mentioned by %s in %s on %s' % (nick, channel, timestamp))
+            w.prnt_date_tags(buffer, 0, 'no_log,notify_none', 'olde!! already posted by %s in %s on %s' % (nick, channel, timestamp))
     return w.WEECHAT_RC_OK
 
 
-# weechat.register(name, author, version, license, description,
-#                  shutdown_function, charset)
 if w.register(SCRIPT_NAME, SCRIPT_AUTHOR, SCRIPT_VERSION,
            SCRIPT_LICENSE, SCRIPT_DESC, '', ''):
     if IMPORT_ERR:
         w.prnt("", "You need sqlite3 to run this plugin.")
     DBFILE = "%s/olde.sqlite3" % w.info_get("weechat_dir", "")
     if not os.path.isfile(DBFILE):
-        create_db()
+        create_db() # init on load if file doesn't exist.
 
-    # catch urls in buffer and print
+    # catch urls in buffer and send to the cb
     w.hook_print('', '', '://', 1, 'search_urls_cb', '')
 
     # test
-    w.prnt(w.current_buffer(), "script loaded!")
-
-#def _print_url(data, buffer):
-#    return w.WEECHAT_RC_OK
+    #w.prnt(w.current_buffer(), "script loaded!")
