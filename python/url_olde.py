@@ -11,6 +11,8 @@ TODO
   - channels
  - purge sql rows after an age range (or fixed size)
  - ignore parts/quits messages
+ - fix youtube bug: it strips the ?v=ShfdhWEgh
+  - do we store the real URI and then urlparse on the select?
 """
 
 SCRIPT_NAME = "url_olde"
@@ -52,7 +54,8 @@ def search_urls_cb(data, buffer, date, tags, displayed, highlight, prefix, messa
     full_uri = re.findall('http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+', message) # i didn't write this. close enough is good enough for now.
     channel = w.buffer_get_string(buffer, 'name') # current channel.
     for olde in full_uri: # iterate over each URI we get in the list from full_uri regex
-        uri = urlparse(olde).hostname + urlparse(olde).path.rstrip("/)") # strip the final / and lesser-seen )
+        uri = urlparse(olde).hostname + urlparse(olde).path + urlparse(olde).query
+        uri = uri.rstrip("/)") # strip the final / and lesser-seen )
         new_entry = [] # create an ordered list of the following values we want to INSERT -> sql later on
         new_entry.append(uri)
         new_entry.append(time.time())
