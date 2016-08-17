@@ -7,12 +7,11 @@ TODO
  - set a preference value for ignoring:
   - nicks
  - purge sql rows after an age range (or fixed size)
- - ignore parts/quits messages
 """
 
 SCRIPT_NAME = "url_olde"
 SCRIPT_AUTHOR = "Charlie Allom <charlie@evilforbeginners.com"
-SCRIPT_VERSION = "0.3"
+SCRIPT_VERSION = "0.4"
 SCRIPT_LICENSE = "GPL3"
 SCRIPT_DESC = "tells you how long ago a URL was first posted and by whom, for bragging rights."
 
@@ -114,7 +113,7 @@ if w.register(SCRIPT_NAME, SCRIPT_AUTHOR, SCRIPT_VERSION,
     # config
     w.hook_config('plugins.var.python.' + SCRIPT_NAME + '.*', 'url_olde_config_cb', '')
     # catch urls in buffer and send to the cb
-    w.hook_print('', '', '://', 1, 'search_urls_cb', '')
+    w.hook_print('', 'irc_privmsg', '://', 1, 'search_urls_cb', '')
 
     # test
     # w.prnt(w.current_buffer(), "script loaded!")
