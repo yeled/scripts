@@ -30,7 +30,7 @@ import os
 
 # plugins.var.python.url_olde.ignore_channel
 settings = {
-    'ignore_channel': ''
+    'ignored_channels' : ('chanmon', 'command separated list of buffer names (freenode.#foo)')
 }
 
 
@@ -56,29 +56,31 @@ def search_urls_cb(data, buffer, date, tags, displayed, highlight, prefix, messa
     nick = prefix
     full_uri = re.findall('http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+', message)
     channel = w.buffer_get_string(buffer, 'name')  # current channel.
-    if buffer not in ignore_channel:
-        for olde in full_uri:  # iterate over each URI we get in the list from full_uri regex
-            url, fragment = urldefrag(olde)
-            uri = url.rstrip("/)")  # strip the final / and lesser-seen )
-            new_entry = []  # create an ordered list of the following values we want to INSERT -> sql later on
-            new_entry.append(uri)
-            new_entry.append(time.time())
-            new_entry.append(nick)
-            new_entry.append(channel)
-            cursor.execute("SELECT date,uri,nick,channel from urls WHERE uri = ?", (uri,))
-            result = cursor.fetchone()
-            if result is None:
-                """ a new URL is seen! """
-                # w.command(buffer, "/notice %s"  % (new_entry))  # debug
-                cursor.execute("INSERT INTO urls(uri, date, nick, channel) VALUES (?,?,?,?)", new_entry)
-                database.commit()
-            else:
-                """ we've got a match from sqlite """
-                date, uri, nick, channel = result
-                timestamp = time.strftime('%Y-%m-%d %H:%M', time.localtime(date))  # convert it to YYYY-MM-DD
-                # w.command(buffer, "/notice DING %s"  % str(result)) # debug
-                w.prnt_date_tags(buffer, 0, 'no_log,notify_none', 'olde!! already posted by %s in %s on %s' % (nick, channel, timestamp))
-        return w.WEECHAT_RC_OK
+    for olde in full_uri:  # iterate over each URI we get in the list from full_uri regex
+        url, fragment = urldefrag(olde)
+        uri = url.rstrip("/)")  # strip the final / and lesser-seen )
+        new_entry = []  # create an ordered list of the following values we want to INSERT -> sql later on
+        new_entry.append(uri)
+        new_entry.append(time.time())
+        new_entry.append(nick)
+        new_entry.append(channel)
+        cursor.execute("SELECT date,uri,nick,channel from urls WHERE uri = ?", (uri,))
+        result = cursor.fetchone()
+	if channel in str(settings['ignored_channels']):
+	    w.prnt(w.current_buffer(), 'ignoring %s' % uri)
+	    return False
+        if result is None:
+            """ a new URL is seen! """
+            # w.command(buffer, "/notice %s"  % (new_entry))  # debug
+            cursor.execute("INSERT INTO urls(uri, date, nick, channel) VALUES (?,?,?,?)", new_entry)
+            database.commit()
+        else:
+            """ we've got a match from sqlite """
+            date, uri, nick, channel = result
+            timestamp = time.strftime('%Y-%m-%d %H:%M', time.localtime(date))  # convert it to YYYY-MM-DD
+            # w.command(buffer, "/notice DING %s"  % str(result)) # debug
+            w.prnt_date_tags(buffer, 0, 'no_log,notify_none', 'olde!! already posted by %s in %s on %s' % (nick, channel, timestamp))
+    return w.WEECHAT_RC_OK
 
 
 if w.register(SCRIPT_NAME, SCRIPT_AUTHOR, SCRIPT_VERSION,
@@ -88,9 +90,12 @@ if w.register(SCRIPT_NAME, SCRIPT_AUTHOR, SCRIPT_VERSION,
     DBFILE = "%s/olde.sqlite3" % w.info_get("weechat_dir", "")
     if not os.path.isfile(DBFILE):
         create_db()  # init on load if file doesn't exist.
+    for option, default_value in settings.items():
+	if not w.config_is_set_plugin(option):
+	    w.config_set_plugin(option, default_value)
 
-    ignore_channel = Ignores('ignore_channel')
-
+    # catch config updates
+    w.hook_config("plugins.var.python." + SCRIPT_NAME + ".*", "config_cb", "")
     # catch urls in buffer and send to the cb
     w.hook_print('', '', '://', 1, 'search_urls_cb', '')
 
