@@ -28,7 +28,7 @@ import os
 
 # plugins.var.python.url_olde.ignore_channel
 url_olde_settings_default = {
-    'ignored_channels' : 'chanmon'
+    'ignored_channels': ('chanmon', 'comma separated list of buffers you want ignored. eg. freenode.#channelname')
 }
 url_olde_settings = {}
 
