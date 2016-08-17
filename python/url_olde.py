@@ -1,6 +1,4 @@
 """
-Charlie Allom <charlie@evilforbeginners.com>
-
 database init code from https://weechat.org/scripts/source/triggerreply.py.html
 regex is from http://stackoverflow.com/questions/6883049/regex-to-find-urls-in-string-in-python
 
@@ -11,8 +9,6 @@ TODO
   - channels
  - purge sql rows after an age range (or fixed size)
  - ignore parts/quits messages
- - fix youtube bug: it strips the ?v=ShfdhWEgh
-  - do we store the real URI and then urlparse on the select?
 """
 
 SCRIPT_NAME = "url_olde"
