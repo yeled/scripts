@@ -67,7 +67,7 @@ def search_urls_cb(data, buffer, date, tags, displayed, highlight, prefix, messa
         cursor.execute("SELECT date,uri,nick,channel from urls WHERE uri = ?", (uri,))
         result = cursor.fetchone()
         if channel in str(url_olde_settings['ignored_channels']):
-            w.prnt(w.current_buffer(), 'ignoring %s due to ignored_channels = %s' % (uri, str(url_olde_settings['ignored_channels'])))
+            # w.prnt(w.current_buffer(), 'ignoring %s due to ignored_channels = %s' % (uri, str(url_olde_settings['ignored_channels'])))
             return w.WEECHAT_RC_OK
         if result is None:
             """ a new URL is seen! """
