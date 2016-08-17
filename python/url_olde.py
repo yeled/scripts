@@ -12,7 +12,7 @@ TODO
 
 SCRIPT_NAME = "url_olde"
 SCRIPT_AUTHOR = "Charlie Allom <charlie@evilforbeginners.com"
-SCRIPT_VERSION = "0.2"
+SCRIPT_VERSION = "0.3"
 SCRIPT_LICENSE = "GPL3"
 SCRIPT_DESC = "tells you how long ago a URL was first posted and by whom, for bragging rights."
 
