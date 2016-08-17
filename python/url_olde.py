@@ -24,7 +24,7 @@ SCRIPT_DESC = "tells you how long ago a URL was first posted and by whom, for br
 try:
     import weechat as w
     import sqlite3, time, re
-    from urlparse import urlparse
+    from urlparse import urldefrag
     IMPORT_ERR = 0
 except ImportError:
     IMPORT_ERR = 1
@@ -54,14 +54,14 @@ def search_urls_cb(data, buffer, date, tags, displayed, highlight, prefix, messa
     full_uri = re.findall('http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+', message) # i didn't write this. close enough is good enough for now.
     channel = w.buffer_get_string(buffer, 'name') # current channel.
     for olde in full_uri: # iterate over each URI we get in the list from full_uri regex
-        uri = urlparse(olde).hostname + urlparse(olde).path + urlparse(olde).query
-        uri = uri.rstrip("/)") # strip the final / and lesser-seen )
+        url, fragment = urldefrag(olde)
+        uri = url.rstrip("/)") # strip the final / and lesser-seen )
         new_entry = [] # create an ordered list of the following values we want to INSERT -> sql later on
         new_entry.append(uri)
         new_entry.append(time.time())
         new_entry.append(nick)
         new_entry.append(channel)
-        cursor.execute("SELECT date,uri,nick,channel from urls WHERE uri LIKE ?", (uri,))
+        cursor.execute("SELECT date,uri,nick,channel from urls WHERE uri = ?", (uri,))
         result=cursor.fetchone()
         if result is None:
             """ a new URL is seen! """
@@ -71,7 +71,7 @@ def search_urls_cb(data, buffer, date, tags, displayed, highlight, prefix, messa
         else:
             """ we've got a match from sqlite """
             date, uri, nick, channel = result
-            timestamp = time.strftime('%Y-%m-%d', time.localtime(date)) # convert it to YYYY-MM-DD
+            timestamp = time.strftime('%Y-%m-%d %H:%M', time.localtime(date)) # convert it to YYYY-MM-DD
             #w.command(buffer, "/notice DING %s"  % str(result)) # debug
             w.prnt_date_tags(buffer, 0, 'no_log,notify_none', 'olde!! already posted by %s in %s on %s' % (nick, channel, timestamp))
     return w.WEECHAT_RC_OK
