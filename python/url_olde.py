@@ -28,9 +28,10 @@ except ImportError:
 import os
 
 # plugins.var.python.url_olde.ignore_channel
-settings = {
-    'ignored_channels' : ('chanmon', 'command separated list of buffer names (freenode.#foo)')
+url_olde_settings_default = {
+    'ignored_channels' : 'chanmon'
 }
+url_olde_settings = {}
 
 
 def create_db():
@@ -65,9 +66,9 @@ def search_urls_cb(data, buffer, date, tags, displayed, highlight, prefix, messa
         new_entry.append(channel)
         cursor.execute("SELECT date,uri,nick,channel from urls WHERE uri = ?", (uri,))
         result = cursor.fetchone()
-	if channel in str(settings['ignored_channels']):
-	    w.prnt(w.current_buffer(), 'ignoring %s' % uri)
-	    return False
+        if channel in str(url_olde_settings['ignored_channels']):
+            w.prnt(w.current_buffer(), 'ignoring %s due to ignored_channels = %s' % (uri, str(url_olde_settings['ignored_channels'])))
+            return w.WEECHAT_RC_OK
         if result is None:
             """ a new URL is seen! """
             # w.command(buffer, "/notice %s"  % (new_entry))  # debug
@@ -82,6 +83,25 @@ def search_urls_cb(data, buffer, date, tags, displayed, highlight, prefix, messa
     return w.WEECHAT_RC_OK
 
 
+def url_olde_load_config():
+    global url_olde_settings_default, url_olde_settings
+    version = w.info_get('version_number', '') or 0
+    for option, value in url_olde_settings_default.items():
+        if w.config_is_set_plugin(option):
+            url_olde_settings[option] = w.config_get_plugin(option)
+        else:
+            w.config_set_plugin(option, value[0])
+            url_olde_settings[option] = value[0]
+        if int(version) >= 0x00030500:
+            w.config_set_desc_plugin(option, value[1])
+
+
+def url_olde_config_cb(data, option, value):
+    """Called each time an option is changed."""
+    url_olde_load_config()
+    return w.WEECHAT_RC_OK
+
+
 if w.register(SCRIPT_NAME, SCRIPT_AUTHOR, SCRIPT_VERSION,
               SCRIPT_LICENSE, SCRIPT_DESC, '', ''):
     if IMPORT_ERR:
@@ -89,12 +109,10 @@ if w.register(SCRIPT_NAME, SCRIPT_AUTHOR, SCRIPT_VERSION,
     DBFILE = "%s/olde.sqlite3" % w.info_get("weechat_dir", "")
     if not os.path.isfile(DBFILE):
         create_db()  # init on load if file doesn't exist.
-    for option, default_value in settings.items():
-	if not w.config_is_set_plugin(option):
-	    w.config_set_plugin(option, default_value)
 
-    # catch config updates
-    w.hook_config("plugins.var.python." + SCRIPT_NAME + ".*", "config_cb", "")
+    url_olde_load_config()
+    # config
+    w.hook_config('plugins.var.python.' + SCRIPT_NAME + '.*', 'url_olde_config_cb', '')
     # catch urls in buffer and send to the cb
     w.hook_print('', '', '://', 1, 'search_urls_cb', '')
 
